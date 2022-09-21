@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 import argparse
+import glob
 import itertools
 import json
 import os
 import subprocess
 import sys
+import tarfile
 
 BUILD_IMAGE = "bgio/build"
 NODE_IMAGE = "node:16"
@@ -30,6 +32,21 @@ def parse_args(cli_args):
     return parser.parse_args(cli_args)
 
 
+def find_and_extract_react_ui():
+    try:
+        react_ui_tarball = glob.glob(f"{BASE_PATH}/src/*react*.tar.gz")[0]
+    except IndexError:
+        print("Could not locate react release tarball in ${BASE_PATH}/src/")
+        sys.exit(1)
+
+    with tarfile.open(react_ui_tarball) as _file:
+        _file.extractall(f"{BASE_PATH}/src/")
+
+    # rename the directory to something consistent
+    dirname = react_ui_tarball.replace(".tar.gz", "")
+    os.rename(dirname, f"{BASE_PATH}/src/react-ui")
+
+
 def build_rpms(version, iteration, cli_dist, cli_python, local, docker_envs):
 
     if cli_dist:
@@ -48,6 +65,8 @@ def build_rpms(version, iteration, cli_dist, cli_python, local, docker_envs):
         print("Supported distributions are: %s" % SUPPORTED_PYTHONS)
         sys.exit(1)
 
+    find_and_extract_react_ui()
+
     # This massages the input env dict into ["-e", "key=value"]
     # It's gross, don't worry about it
     env_vars = list(
@@ -56,30 +75,49 @@ def build_rpms(version, iteration, cli_dist, cli_python, local, docker_envs):
         )
     )
 
-    js_cmd = (
+    ui_build_cmd = (
         ["docker", "run", "--rm", "-v", f"{BASE_PATH}/src:/src"]
         + env_vars
         + [NODE_IMAGE, "make", "-C", "/src/ui", "deps", "package"]
     )
 
-    subprocess.run(js_cmd).check_returncode()
+    subprocess.run(ui_build_cmd).check_returncode()
+
+    reactui_build_cmd = (
+        ["docker", "run", "--rm", "-v", f"{BASE_PATH}/src:/src"]
+        + env_vars
+        + ["-e", "PUBLIC_URL=/preview"]
+        + [NODE_IMAGE, "make", "-C", "/src/react-ui", "deps", "package"]
+    )
+
+    subprocess.run(reactui_build_cmd).check_returncode()
 
     for dist in build_dists:
         tag = f"{dist}-python{build_python}"
         cmd = (
             [
-                "docker", "run", "--rm", "--network", "host",
-                "-v", f"{BASE_PATH}/src:/src",
-                "-v", f"{BASE_PATH}/rpm:/rpm",
-                "-v", f"{SCRIPT_PATH}/rpm_build.sh:{RPM_BUILD_SCRIPT}",
-            ] +
-            env_vars +
-            [
+                "docker",
+                "run",
+                "--rm",
+                "--network",
+                "host",
+                "-v",
+                f"{BASE_PATH}/src:/src",
+                "-v",
+                f"{BASE_PATH}/rpm:/rpm",
+                "-v",
+                f"{SCRIPT_PATH}/rpm_build.sh:{RPM_BUILD_SCRIPT}",
+            ]
+            + env_vars
+            + [
                 BUILD_IMAGE + ":" + tag,
                 RPM_BUILD_SCRIPT,
-                "-r", dist[-1],
-                "-v", version,
-                "-i", iteration,
+                "-r",
+                dist[-1],
+                "-v",
+                version,
+                "-i",
+                iteration,
             ]
         )
 
