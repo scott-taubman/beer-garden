@@ -48,6 +48,10 @@ def find_and_extract_react_ui():
     react_ui_dir = glob.glob(f"{release_path}/react-ui*")[0]
     os.rename(react_ui_dir, f"{release_path}/react-ui")
 
+    print("************************************")
+    os.system(f"ls -l {release_path}")
+    print("************************************")
+
 
 def build_rpms(version, iteration, cli_dist, cli_python, local, docker_envs):
 
@@ -85,6 +89,9 @@ def build_rpms(version, iteration, cli_dist, cli_python, local, docker_envs):
 
     subprocess.run(ui_build_cmd).check_returncode()
 
+    print("*************before build***************")
+    os.system(f"ls -l {BASE_PATH}/src")
+    print("*************before build***************")
     reactui_build_cmd = (
         ["docker", "run", "--rm", "-v", f"{BASE_PATH}/src:/src"]
         + env_vars
