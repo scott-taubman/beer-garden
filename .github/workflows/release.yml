@@ -40,7 +40,7 @@ jobs:
       - name: Download react-ui
         uses: robinraju/release-downloader@v1.5
         with:
-          reposity: "beer-garden/react-ui"
+          repository: "beer-garden/react-ui"
           latest: true
           tarBall: true
           zipBall: false
