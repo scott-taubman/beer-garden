@@ -36,7 +36,7 @@ def find_and_extract_react_ui():
     release_path = f"{BASE_PATH}/src"
 
     try:
-        react_ui_tarball = glob.glob(f"{release_path}/*.tar.gz")[0]
+        react_ui_tarball = glob.glob(f"{release_path}/react-ui*.tar.gz")[0]
     except IndexError:
         print("Could not locate react release tarball in ${release_path}")
         sys.exit(1)
@@ -44,17 +44,9 @@ def find_and_extract_react_ui():
     with tarfile.open(react_ui_tarball) as _file:
         _file.extractall(f"{release_path}/")
 
-    # *************TEMP***************
-    os.system(f"ls -l {release_path}")
-    # *************TEMP***************
-
     # rename the directory to something consistent
     react_ui_dir = glob.glob(f"{release_path}/react-ui*")[0]
     os.rename(react_ui_dir, f"{release_path}/react-ui")
-
-    # *************TEMP***************
-    os.system(f"ls -l {release_path}")
-    # *************TEMP***************
 
 
 def build_rpms(version, iteration, cli_dist, cli_python, local, docker_envs):
