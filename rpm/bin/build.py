@@ -47,7 +47,6 @@ def find_and_extract_react_ui():
     os.remove(react_ui_tarball)
 
     # rename the directory to something consistent
-    react_ui_dir = react_ui_tarball.replace(".tar.gz", "")
     react_ui_dir = glob.glob(f"{release_path}/*react-ui*")[0]
     os.rename(react_ui_dir, f"{release_path}/react-ui")
 
