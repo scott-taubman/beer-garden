@@ -35,10 +35,6 @@ def parse_args(cli_args):
 def find_and_extract_react_ui():
     release_path = f"{BASE_PATH}/src"
 
-    print("************************************")
-    os.system(f"ls -l {release_path}")
-    print("************************************")
-
     try:
         react_ui_tarball = glob.glob(f"{release_path}/react-ui*.tar.gz")[0]
     except IndexError:
@@ -48,12 +44,11 @@ def find_and_extract_react_ui():
     with tarfile.open(react_ui_tarball) as _file:
         _file.extractall(f"{release_path}/")
 
-    print("************************************")
-    os.system(f"ls -l {release_path}")
-    print("************************************")
+    os.remove(react_ui_tarball)
 
     # rename the directory to something consistent
     react_ui_dir = react_ui_tarball.replace(".tar.gz", "")
+    react_ui_dir = glob.glob(f"{release_path}/*react-ui*")[0]
     os.rename(react_ui_dir, f"{release_path}/react-ui")
 
 
@@ -93,9 +88,6 @@ def build_rpms(version, iteration, cli_dist, cli_python, local, docker_envs):
 
     subprocess.run(ui_build_cmd).check_returncode()
 
-    print("*************before build***************")
-    os.system(f"ls -l {BASE_PATH}/src")
-    print("*************before build***************")
     reactui_build_cmd = (
         ["docker", "run", "--rm", "-v", f"{BASE_PATH}/src:/src"]
         + env_vars
